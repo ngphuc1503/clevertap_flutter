@@ -1,7 +1,7 @@
-// PushService.dart – phiên bản đã thêm onMessage & onMessageOpenedApp để xử lý click
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cgv_demo_flutter_firebase/pages/product_page.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -24,31 +24,37 @@ class PushService {
     await Firebase.initializeApp();
     await FirebaseMessaging.instance.requestPermission();
 
-    _configureCleverTapChannel();
+    final token = await FirebaseMessaging.instance.getToken();
+    if (token != null) {
+      CleverTapPlugin.setPushToken(token);      
+      debugPrint('[FCM token] $token');
+    }
 
-    // 1️⃣ Foreground: khi FCM đến → để CT tự render và gắn PendingIntent
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+      CleverTapPlugin.setPushToken(newToken);       
+      debugPrint('[FCM token refresh] $newToken');
+    });
+
     FirebaseMessaging.onMessage.listen((RemoteMessage m) {
       debugPrint('[FCM onMessage] ${m.data}');
-      // Dữ liệu push luôn nằm trong m.data (đối với CleverTap)
       CleverTapPlugin.createNotification(jsonEncode(m.data));
     });
 
-    // 2️⃣ Background ➜ tap ➜ app mở
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage m) {
       debugPrint('[FCM onMessageOpenedApp] ${m.data}');
       _handleNotificationClick(m.data);
     });
 
-    // 3️⃣ Foreground / background khi Flutter engine đã sẵn sàng
     _ct.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
-
-    // 4️⃣ Headless background isolate
     FirebaseMessaging.onBackgroundMessage(_onBackground);
+
+    _configureCleverTapChannel();
+
   }
 
   /* ---------------- HANDLER PUSH CLICK (từ CT callback) ------------- */
   void pushClickedPayloadReceived(Map<String, dynamic> payload) {
-    debugPrint('[CT Push Clicked] $payload');
+    debugPrint('[CT Push Clicked] Notification payload  $payload');
     _handleNotificationClick(payload);
   }
 
@@ -61,29 +67,34 @@ class PushService {
   }
 
   /* --------------------- NAVIGATION LOGIC --------------------------- */
-  void _navigateByDeepLink(String link) async {
-    final uri = Uri.parse(link);
+void _navigateByDeepLink(String link) async {
+  final uri = Uri.parse(link);
+  debugPrint('[DeepLink] URI = $uri');
+  debugPrint('[DeepLink] host=${uri.host}, path=${uri.path}');
 
-    if (uri.scheme == 'abc') {
-      switch (uri.path) {
-        case '/cart':
-          _pushIfPossible(const Cartpage());
-          return;
-        case '/login':
-          _pushIfPossible(const Loginpage());
-          return;
-        default:
-          debugPrint('[DeepLink] Unhandled path: ${uri.path}');
-          return;
-      }
-    }
+  if (uri.scheme == 'abc') {
+    final path = uri.host.isNotEmpty ? uri.host : uri.path.replaceFirst('/', '');
 
-    if (uri.scheme == 'http' || uri.scheme == 'https') {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
+    switch (path) {
+      case 'cart':
+        _pushIfPossible(const Cartpage());
+        return;
+      case 'login':
+        _pushIfPossible(const Loginpage());
+        return;
+      case 'product':
+        _pushIfPossible(Productpage());
+        return;
+      default:
+        debugPrint('[DeepLink] Không tìm thấy path: $path');
+        return;
     }
   }
+
+  if (['http', 'https'].contains(uri.scheme) && await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
 
   void _pushIfPossible(Widget page) {
     final ctx = navigatorKey.currentContext;
@@ -97,16 +108,13 @@ class PushService {
   /* ------------- BACKGROUND ISOLATE HANDLER ------------------------- */
   static Future<void> _onBackground(RemoteMessage msg) async {
     debugPrint('[FCM BG isolate] ${msg.data}');
-    // Khi app hoàn toàn headless, chỉ log; deeplink sẽ được xử lý khi app mở lại.
   }
 
   /* ----------------- NOTIFICATION CHANNEL --------------------------- */
   void _configureCleverTapChannel() {
     if (Platform.isAndroid) {
-      CleverTapPlugin.createNotificationChannel(
-        'fluttertest', 'Flutter Test', 'Flutter Test', 3, true,
-      );
+      CleverTapPlugin.createNotificationChannel('Flutter Test', 'Flutter Test', 'Flutter Test', 3, true, );
     }
-    CleverTapPlugin.setDebugLevel(4); // verbose log
+    CleverTapPlugin.setDebugLevel(4);
   }
 }

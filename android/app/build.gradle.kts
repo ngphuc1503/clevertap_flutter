@@ -1,10 +1,8 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services") version "4.4.0"  
-    
+    id("com.google.gms.google-services") version "4.4.0"
 }
 
 android {
@@ -16,45 +14,48 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
+    kotlinOptions { jvmTarget = "11" }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "aka.digital.cgv_demo_v2"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Bắt buộc nếu method count > 64k
+        multiDexEnabled = true
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true         
+            isShrinkResources = true      
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
+
 }
 
-flutter {
-    source = "../.."
-}
+flutter { source = "../.." }
 
 dependencies {
-    implementation("com.google.firebase:firebase-messaging:21.0.0")
-    implementation("androidx.core:core:1.3.0")
-    implementation("androidx.fragment:fragment:1.3.6")
-    implementation("androidx.appcompat:appcompat:1.3.1")
-    implementation("androidx.recyclerview:recyclerview:1.2.1")
+    implementation(platform("com.google.firebase:firebase-bom:33.3.1"))
+    implementation("com.google.firebase:firebase-messaging")
+
+    implementation("com.clevertap.android:clevertap-android-sdk:7.4.0")
+    implementation("com.clevertap.android:push-templates:2.0.0")
+
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.viewpager:viewpager:1.0.0")
-    implementation("com.google.android.material:material:1.4.0")
+    implementation("com.google.android.material:material:1.11.0")
+
     implementation("com.github.bumptech.glide:glide:4.12.0")
-    implementation("com.android.installreferrer:installreferrer:2.2")
     implementation("androidx.media3:media3-exoplayer:1.1.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.1.1")
     implementation("androidx.media3:media3-ui:1.1.1")

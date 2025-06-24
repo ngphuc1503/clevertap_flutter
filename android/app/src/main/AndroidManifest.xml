@@ -12,7 +12,7 @@
 
     <application
         android:label="cgv_demo_flutter_firebase"
-        android:name="${applicationName}"
+        android:name=".MyApplication"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -23,13 +23,21 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
+            
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"/>
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"/>
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="abc" />
             </intent-filter>
         </activity>
 
@@ -48,7 +56,9 @@
         <meta-data
             android:name="CLEVERTAP_REGION"
             android:value="sg1"/>
-        
+        <meta-data
+            android:name="CLEVERTAP_NOTIFICATION_ICON"
+            android:value="aka_logo"/> 
         <receiver
             android:name="com.clevertap.flutter.CleverTapFlutterPushReceiver"
             android:exported="false">
@@ -57,18 +67,43 @@
                 <action android:name="com.clevertap.PUSH_AMPLIFICATION_EVENT" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name="com.clevertap.pushtemplates.PTPushNotificationReceiver"
+            android:exported="false"
+            android:enabled="true">
+        </receiver>
+        <receiver
+            android:name="com.clevertap.pushtemplates.PushTemplateReceiver"
+            android:exported="false"
+            android:enabled="true">
+        </receiver>
 
-        <service android:name="com.clevertap.android.sdk.pushnotification.fcm.FcmMessageListenerService" 
+        <!-- <service android:name="com.clevertap.android.sdk.pushnotification.fcm.FcmMessageListenerService" 
          android:exported="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
-        </service>
+        </service> -->
 
         <service
             android:name="com.clevertap.android.sdk.pushnotification.CTNotificationIntentService"
             android:exported="false" />
-            
+
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name="com.clevertap.pushtemplates.PTNotificationIntentService"
+            android:exported="false">
+                <intent-filter>
+                    <action android:name="com.clevertap.PT_PUSH_EVENT"/>
+                </intent-filter>
+        </service>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

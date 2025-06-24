@@ -3,25 +3,30 @@ import 'package:cgv_demo_flutter_firebase/pages/checkout_page.dart';
 import 'package:cgv_demo_flutter_firebase/pages/product_page.dart';
 import 'package:flutter/material.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:cgv_demo_flutter_firebase/services/push_service.dart';
 import 'pages/login_page.dart';
 import 'pages/cart_page.dart';
 
-/// Global navigatorKey để điều hướng / hiển thị SnackBar từ bất cứ đâu
+@pragma('vm:entry-point')
+void _onKilledStateNotificationClickedHandler(Map<String, dynamic> payload) async {
+  debugPrint('[KilledState] Payload: $payload');
+}
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Đăng ký handler khi app bị kill
+  CleverTapPlugin.onKilledStateNotificationClicked(_onKilledStateNotificationClickedHandler);
 
-  // Khởi tạo PushService (FCM + CleverTap)
   await PushService().init();
-
   runApp(const MyApp());
 }
 
-/// MyApp Stateful để xử lý deeplink khi app khởi động từ push
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -30,16 +35,18 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  static const platform = MethodChannel('deeplink_channel');
+
   @override
   void initState() {
     super.initState();
-    if (Platform.isAndroid) _checkLaunchFromNotification();
+    if (Platform.isAndroid) {
+      _checkLaunchFromNotification();
+      platform.setMethodCallHandler(_handleRuntimeDeeplink); // ✅ sửa lỗi truyền method handler
+    }
   }
 
-  /* ------------------------------------------------------------------ */
-  /*      XỬ LÝ PUSH mở app từ trạng thái KILL (cold‑start deeplink)     */
-  /* ------------------------------------------------------------------ */
-
+  /* -------------------- Cold-start push -------------------- */
   Future<void> _checkLaunchFromNotification() async {
     final launchInfo = await CleverTapPlugin.getAppLaunchNotification();
     if (launchInfo.didNotificationLaunchApp) {
@@ -49,22 +56,29 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _handleDeepLink(Map<String, dynamic> payload) {
-    // Deeplink từ CleverTap nằm trong key "wzrk_dl"
     final deepLink = payload['wzrk_dl'] as String?;
-    if (deepLink == null) return;
-
-    debugPrint('[ColdStart wzrk_dl] $deepLink');
-    _navigateByDeepLink(deepLink);
+    _handleDeepLinkString(deepLink);
   }
 
-  /* ------------------------------------------------------------------ */
-  /*                ĐIỀU HƯỚNG DỰA TRÊN GIÁ TRỊ wzrk_dl                 */
-  /* ------------------------------------------------------------------ */
+  /* -------------------- Runtime push via MethodChannel -------------------- */
+  Future<void> _handleRuntimeDeeplink(MethodCall call) async {
+    if (call.method == 'onDeeplinkReceived') {
+      final String? deepLink = call.arguments;
+      _handleDeepLinkString(deepLink);
+    }
+  }
 
+  void _handleDeepLinkString(String? wzrkDl) {
+    if (wzrkDl == null) return;
+
+    debugPrint('[wzrk_dl] $wzrkDl');
+    _navigateByDeepLink(wzrkDl);
+  }
+
+  /* -------------------- DeepLink Navigator -------------------- */
   void _navigateByDeepLink(String link) async {
     final uri = Uri.parse(link);
 
-    // Scheme nội bộ "abc://" → điều hướng trong app
     if (uri.scheme == 'abc') {
       switch (uri.path) {
         case '/cart':
@@ -85,7 +99,6 @@ class _MyAppState extends State<MyApp> {
       return;
     }
 
-    // Nếu là http/https → mở trình duyệt ngoài
     if (uri.scheme == 'http' || uri.scheme == 'https') {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -93,7 +106,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  /// Đẩy route chỉ khi navigatorKey đã sẵn sàng
   void _pushIfPossible(Widget page) {
     final ctx = navigatorKey.currentContext;
     if (ctx != null) {
@@ -101,8 +113,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  /* ------------------------------------------------------------------ */
-
+  /* -------------------- UI -------------------- */
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

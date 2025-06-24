@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:geolocator/geolocator.dart';
 import 'product_page.dart';
-import 'package:firebase_core/firebase_core.dart';        // 👈 NEW
-import 'package:firebase_messaging/firebase_messaging.dart'; // 👈 NEW
+import 'package:firebase_core/firebase_core.dart';        
+import 'package:firebase_messaging/firebase_messaging.dart'; 
 
 
 class Loginpage extends StatefulWidget {
@@ -39,7 +39,6 @@ class _LoginPageState extends State<Loginpage> {
     super.dispose();
   }
 
-  // Đăng nhập và nhận dạng người dùng lần đầu
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       final name = _nameController.text.trim();
@@ -66,7 +65,6 @@ class _LoginPageState extends State<Loginpage> {
     }
   }
 
-  // Cập nhật hồ sơ người dùng sau khi đã login
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
       final name = _nameController.text.trim();
