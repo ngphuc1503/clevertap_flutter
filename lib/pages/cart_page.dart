@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cgv_demo_flutter_firebase/model/cart.dart';
-import 'product_page.dart';  
+import 'checkout_page.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 
 class Cartpage extends StatelessWidget {
@@ -32,8 +32,10 @@ class Cartpage extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đặt hàng thành công!')),
       );
-      Navigator.pop(context);       
-    }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const Checkoutpage()),
+      );    }
   @override
   Widget build(BuildContext context) {
     final cartItems = Cart.items;

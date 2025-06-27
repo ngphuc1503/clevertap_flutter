@@ -58,7 +58,14 @@
             android:value="sg1"/>
         <meta-data
             android:name="CLEVERTAP_NOTIFICATION_ICON"
-            android:value="aka_logo"/> 
+            android:value="aka_logo_notification" />
+        <meta-data
+            android:name="CLEVERTAP_NOTIFICATION_HANDLER"
+            android:value="aka.digital.cgv_demo_v2.MyCTHandler" />
+        <meta-data
+            android:name="CLEVERTAP_NOTIFICATION_RENDER"
+            android:value="false" />
+
         <receiver
             android:name="com.clevertap.flutter.CleverTapFlutterPushReceiver"
             android:exported="false">
@@ -88,7 +95,6 @@
         <service
             android:name="com.clevertap.android.sdk.pushnotification.CTNotificationIntentService"
             android:exported="false" />
-
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="true">
@@ -96,7 +102,6 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>
         </service>
-
         <service
             android:name="com.clevertap.pushtemplates.PTNotificationIntentService"
             android:exported="false">
@@ -105,11 +110,6 @@
                 </intent-filter>
         </service>
     </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
-
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>

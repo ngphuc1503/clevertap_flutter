@@ -19,8 +19,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Đăng ký handler khi app bị kill
+
   CleverTapPlugin.onKilledStateNotificationClicked(_onKilledStateNotificationClickedHandler);
 
   await PushService().init();
@@ -36,24 +35,65 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   static const platform = MethodChannel('deeplink_channel');
+  final CleverTapPlugin _ct = CleverTapPlugin();
 
   @override
   void initState() {
     super.initState();
     if (Platform.isAndroid) {
+
       _checkLaunchFromNotification();
-      platform.setMethodCallHandler(_handleRuntimeDeeplink); // ✅ sửa lỗi truyền method handler
+      platform.setMethodCallHandler(_handleRuntimeDeeplink); 
+    }
+    _ct.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
+    _ct.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed);
+    _ct.setCleverTapInAppNotificationShowHandler(inAppNotificationShow);
+
+  }
+
+    /* -------------------- In_app message -------------------- */
+
+  // void inAppNotificationButtonClicked(Map<String, dynamic> map) {
+  //   this.setState(() {
+  //     print("inAppNotificationButtonClicked called = ${map.toString()}");
+  //   });
+  // }
+
+  void inAppNotificationButtonClicked(Map<String, dynamic>? map) {
+    debugPrint("🔘 In-App Notification Button Clicked: $map");
+
+    String? deepLink = map?['wzrk_dl'];
+
+    if (deepLink == null && map?['actions'] is Map) {
+      final actions = map!['actions'] as Map;
+      deepLink = actions['android'];
+    }
+
+    if (deepLink != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleDeepLinkString(deepLink);
+      });
+    } else {
+      debugPrint("❗ Không tìm thấy deeplink trong In-App Notification");
     }
   }
 
-  /* -------------------- Cold-start push -------------------- */
-  Future<void> _checkLaunchFromNotification() async {
-    final launchInfo = await CleverTapPlugin.getAppLaunchNotification();
-    if (launchInfo.didNotificationLaunchApp) {
-      final payload = launchInfo.payload!;
-      _handleDeepLink(payload);
+    void inAppNotificationDismissed(Map<String, dynamic> map) {
+      debugPrint("🔕 In-App Notification Dismissed");
     }
-  }
+
+    void inAppNotificationShow(Map<String, dynamic> map) {
+      debugPrint("🟡 In-App Notification Shown: $map");
+    }
+
+    /* -------------------- Cold-start push -------------------- */
+    Future<void> _checkLaunchFromNotification() async {
+      final launchInfo = await CleverTapPlugin.getAppLaunchNotification();
+      if (launchInfo.didNotificationLaunchApp) {
+        final payload = launchInfo.payload!;
+        _handleDeepLink(payload);
+      }
+    }
 
   void _handleDeepLink(Map<String, dynamic> payload) {
     final deepLink = payload['wzrk_dl'] as String?;
@@ -108,6 +148,9 @@ class _MyAppState extends State<MyApp> {
 
   void _pushIfPossible(Widget page) {
     final ctx = navigatorKey.currentContext;
+      debugPrint('[NavigatorContext] $ctx');
+      debugPrint('[NavigatorState] ${navigatorKey.currentState}');
+
     if (ctx != null) {
       Navigator.push(ctx, MaterialPageRoute(builder: (_) => page));
     }

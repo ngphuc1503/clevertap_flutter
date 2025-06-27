@@ -113,7 +113,8 @@ void _navigateByDeepLink(String link) async {
   /* ----------------- NOTIFICATION CHANNEL --------------------------- */
   void _configureCleverTapChannel() {
     if (Platform.isAndroid) {
-      CleverTapPlugin.createNotificationChannel('Flutter Test', 'Flutter Test', 'Flutter Test', 3, true, );
+    CleverTapPlugin.createNotificationChannelWithSound(  'Flutter Test',  'Flutter Test',  'Flutter Test',  3,  true, 'sound1.mp3');
+    CleverTapPlugin.createNotificationChannelWithSound(  'Custom_Channel',  'Custom_Channel',  'Custom_Channel',  3,  true, 'lmao.mp3');
     }
     CleverTapPlugin.setDebugLevel(4);
   }

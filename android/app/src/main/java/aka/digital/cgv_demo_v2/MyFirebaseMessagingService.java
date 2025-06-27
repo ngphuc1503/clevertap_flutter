@@ -33,7 +33,7 @@ import java.util.Map;
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "MyFCMService";
-    private static final String CHANNEL_ID = "Flutter Test";
+    private static final String CHANNEL_ID = "Flutter Test 1";
 
     @Override
     public void onNewToken(@NonNull String token) {
@@ -42,20 +42,22 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (ct != null) ct.pushFcmRegistrationId(token, true);
     }
 
-
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
+        super.onMessageReceived(remoteMessage);
         Map<String, String> data = remoteMessage.getData();
         Log.d(TAG, "Push data payload: " + data);
 
         if (handleCleverTapPush(remoteMessage)) {
+            Log.i(TAG, "[PUSH] Đây là push từ CleverTap – đã xử lý bằng SDK");
             return; 
         }
+        Log.i(TAG, "[PUSH] Không phải từ CleverTap – sẽ hiển thị theo custom");
         showCustomNotification(remoteMessage);
     }
 
-    private boolean handleCleverTapPush(RemoteMessage message) {
-        Map<String, String> data = message.getData();
+    private boolean handleCleverTapPush(RemoteMessage remoteMessage) {
+        Map<String, String> data = remoteMessage.getData();
         if (data == null || data.isEmpty()) return false;
 
         Bundle extras = new Bundle();
@@ -64,9 +66,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             }
 
         NotificationInfo info = CleverTapAPI.getNotificationInfo(extras);
+        Log.d(TAG, "NotificationInfo: fromCleverTap = " + info.fromCleverTap);
+
         if (!info.fromCleverTap) return false;
 
-        new CTFcmMessageHandler().createNotification(getApplicationContext(), message);
+        new CTFcmMessageHandler().createNotification(getApplicationContext(), remoteMessage);
         return true;
     }
 
@@ -74,8 +78,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         createChannelIfNeeded();
 
         Map<String, String> data = message.getData();
-        String title = data.getOrDefault("title", "Thông báo");
-        String body = data.getOrDefault("body", "");
+        String title = data.getOrDefault("title", message.getNotification() != null ? message.getNotification().getTitle() : "Thông báo");
+        String body = data.getOrDefault("body", message.getNotification() != null ? message.getNotification().getBody() : "Nội dung");
         String deeplink = data.get("wzrk_dl"); 
 
         PendingIntent pendingIntent = null;
@@ -105,7 +109,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                         == PackageManager.PERMISSION_GRANTED) {
-            NotificationManagerCompat.from(this).notify((int) System.currentTimeMillis(), builder.build());
+            int notificationId;
+            try {
+                notificationId = Integer.parseInt(data.get("id"));
+            } catch (Exception e) {
+                notificationId = title.hashCode();
+            }
+            NotificationManagerCompat.from(this).notify(notificationId, builder.build());
         } else {
             Log.w(TAG, "Chưa có quyền POST_NOTIFICATIONS");
         }
@@ -117,10 +127,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm.getNotificationChannel(CHANNEL_ID) != null) return;
 
-        Uri soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/raw/sound1");
+        Uri soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/raw/sound2");
         NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
-                "Thông báo tùy chỉnh",
+                "CHANNEL_ID",
                 NotificationManager.IMPORTANCE_HIGH);
         channel.setSound(soundUri, new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)

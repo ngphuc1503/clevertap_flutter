@@ -54,6 +54,8 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.viewpager:viewpager:1.0.0")
     implementation("com.google.android.material:material:1.11.0")
+    implementation("com.android.installreferrer:installreferrer:2.2")
+
 
     implementation("com.github.bumptech.glide:glide:4.12.0")
     implementation("androidx.media3:media3-exoplayer:1.1.1")
