@@ -9,6 +9,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cgv_demo_flutter_firebase/services/push_service.dart';
 import 'pages/login_page.dart';
 import 'pages/cart_page.dart';
+import 'pages/login_page1.dart';
+
 
 @pragma('vm:entry-point')
 void _onKilledStateNotificationClickedHandler(Map<String, dynamic> payload) async {
@@ -163,7 +165,7 @@ class _MyAppState extends State<MyApp> {
       navigatorKey: navigatorKey,
       title: 'CGV Demo App',
       theme: ThemeData(primarySwatch: Colors.red),
-      home: const Loginpage(),
+      home: const Loginpage1(),
     );
   }
 }

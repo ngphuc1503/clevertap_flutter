@@ -12,10 +12,15 @@ import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import android.location.Location;
 
 import com.clevertap.android.sdk.CleverTapAPI;
 import com.clevertap.android.sdk.InAppNotificationButtonListener;
 import com.clevertap.android.sdk.InAppNotificationListener;
+import com.clevertap.android.geofence.CTGeofenceAPI;
+import com.clevertap.android.geofence.interfaces.CTGeofenceEventsListener;
+import com.clevertap.android.geofence.interfaces.CTLocationUpdatesListener;
+import com.clevertap.android.geofence.CTGeofenceSettings;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,18 +29,67 @@ import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
 
-public class MainActivity extends FlutterActivity {
+import org.json.JSONObject;
 
+public class MainActivity extends FlutterActivity {
     private static final String CHANNEL = "deeplink_channel";
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
         super.configureFlutterEngine(flutterEngine);
 
-        CleverTapAPI clevertapDefaultInstance = CleverTapAPI.getDefaultInstance(getApplicationContext());
-        if (clevertapDefaultInstance != null) {
+        CleverTapAPI cleverTapAPI = CleverTapAPI.getDefaultInstance(getApplicationContext());
+        if (cleverTapAPI != null) {
+            Log.d("[CleverTap]", "CleverTap instance initialized");
+
+            CTGeofenceSettings ctGeofenceSettings = new CTGeofenceSettings.Builder()
+                    .enableBackgroundLocationUpdates(true)
+                    .setLogLevel(3)  // Verbose
+                    .setLocationAccuracy((byte) 1)  // HIGH
+                    .setLocationFetchMode((byte) 1) // CONTINUOUS
+                    .setGeofenceMonitoringCount(20)
+                    .setInterval(60 * 60 * 1000) // 1 giờ
+                    .setFastestInterval(30 * 60 * 1000) // 30 phút
+                    .setSmallestDisplacement(200.0f) // 200 mét
+                    .setGeofenceNotificationResponsiveness(30000) // 30 giây
+                    .build();
+
+            CTGeofenceAPI.getInstance(getApplicationContext()).init(ctGeofenceSettings, cleverTapAPI);
+
+            CTGeofenceAPI.getInstance(getApplicationContext())
+                    .setOnGeofenceApiInitializedListener(() -> {
+                        Log.d("[Geofence]", "CTGeofenceAPI initialized ✅");
+                    });
+
+            CTGeofenceAPI.getInstance(getApplicationContext())
+                    .setCtGeofenceEventsListener(new CTGeofenceEventsListener() {
+                        @Override
+                        public void onGeofenceEnteredEvent(JSONObject jsonObject) {
+                            Log.d("[Geofence]", "📍 Entered: " + jsonObject.toString());
+                        }
+
+                        @Override
+                        public void onGeofenceExitedEvent(JSONObject jsonObject) {
+                            Log.d("[Geofence]", "📍 Exited: " + jsonObject.toString());
+                        }
+                    });
+
+            CTGeofenceAPI.getInstance(getApplicationContext())
+                    .setCtLocationUpdatesListener(new CTLocationUpdatesListener() {
+                        @Override
+                        public void onLocationUpdates(Location location) {
+                            Log.d("[Geofence]", "📡 Location update: " + location.getLatitude() + ", " + location.getLongitude());
+                        }
+                    });
+
+            try {
+                CTGeofenceAPI.getInstance(getApplicationContext()).triggerLocation();
+            } catch (IllegalStateException e) {
+                Log.e("[Geofence]", "Geofence SDK chưa được init đúng cách ❌", e);
+            }
         }
     }
+
 
     @Override
     public void onNewIntent(@NonNull Intent intent) {
@@ -52,7 +106,6 @@ public class MainActivity extends FlutterActivity {
                         .invokeMethod("onDeeplinkReceived", deeplink);
             }
         }
-
         setIntent(intent);
     }
 
@@ -86,5 +139,5 @@ public class MainActivity extends FlutterActivity {
             }
         }
     }
-
 }
+

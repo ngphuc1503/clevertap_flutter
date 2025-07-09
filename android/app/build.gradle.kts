@@ -47,6 +47,7 @@ dependencies {
 
     implementation("com.clevertap.android:clevertap-android-sdk:7.4.0")
     implementation("com.clevertap.android:push-templates:2.0.0")
+    implementation("com.clevertap.android:clevertap-geofence-sdk:1.4.0")
 
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
@@ -55,11 +56,13 @@ dependencies {
     implementation("androidx.viewpager:viewpager:1.0.0")
     implementation("com.google.android.material:material:1.11.0")
     implementation("com.android.installreferrer:installreferrer:2.2")
-
+    implementation("com.google.android.gms:play-services-location:21.0.0")
+    implementation("androidx.work:work-runtime:2.7.1")
 
     implementation("com.github.bumptech.glide:glide:4.12.0")
     implementation("androidx.media3:media3-exoplayer:1.1.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.1.1")
     implementation("androidx.media3:media3-ui:1.1.1")
+    implementation("androidx.concurrent:concurrent-futures:1.1.0")
 }
 

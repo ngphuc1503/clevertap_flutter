@@ -35,7 +35,8 @@ class Cartpage extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const Checkoutpage()),
-      );    }
+      );    
+    }
   @override
   Widget build(BuildContext context) {
     final cartItems = Cart.items;

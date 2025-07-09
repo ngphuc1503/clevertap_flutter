@@ -113,23 +113,42 @@ class _LoginPageState extends State<Loginpage> {
   }
 
   Future<void> _syncLocationToCleverTap() async {
-  LocationPermission perm = await Geolocator.checkPermission();
-  if (perm == LocationPermission.denied) {
-    perm = await Geolocator.requestPermission();
-    if (perm == LocationPermission.denied) return;        
-  }
-  if (perm == LocationPermission.deniedForever) return;   
+    LocationPermission perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      perm = await Geolocator.requestPermission();
+      if (perm == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("❌ Quyền truy cập vị trí bị từ chối.")),
+        );
+        return;
+      }
+    }
+    if (perm == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Quyền truy cập vị trí bị từ chối vĩnh viễn.")),
+      );
+      return;
+    }
 
-  Position p = await Geolocator.getCurrentPosition(
-    locationSettings: const LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 100,
-    ),
-  );
-  CleverTapPlugin.setLocation(p.latitude, p.longitude);   
-    setState(() {
-      _logMessage = '[Location] Đã gửi vị trí: (${p.latitude}, ${p.longitude})';
-    });
+    try {
+      Position p = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 100,
+        ),
+      );
+      CleverTapPlugin.setLocation(p.latitude, p.longitude);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("🧭 Đã gửi vị trí: (${p.latitude}, ${p.longitude})")),
+      );
+      print("🧭 Đã gửi vị trí: (${p.latitude}, ${p.longitude})");
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Lấy vị trí thất bại.")),
+      );
+    }
   }
 
   void _goToProductPage() {
