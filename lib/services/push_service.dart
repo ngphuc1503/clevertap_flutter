@@ -21,6 +21,8 @@ class PushService {
   final CleverTapPlugin _ct = CleverTapPlugin();
 
   Future<void> init() async {
+    if (Platform.isAndroid) {
+
     await Firebase.initializeApp();
     await FirebaseMessaging.instance.requestPermission();
 
@@ -45,11 +47,11 @@ class PushService {
       _handleNotificationClick(m.data);
     });
 
-    _ct.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
     FirebaseMessaging.onBackgroundMessage(_onBackground);
+    }
 
+    _ct.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
     _configureCleverTapChannel();
-
   }
 
   /* ---------------- HANDLER PUSH CLICK (từ CT callback) ------------- */

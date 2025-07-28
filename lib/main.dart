@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cgv_demo_flutter_firebase/services/push_service.dart';
 import 'pages/login_page.dart';
 import 'pages/cart_page.dart';
-import 'pages/login_page1.dart';
+import 'pages/test_page.dart';
 
 
 @pragma('vm:entry-point')
@@ -42,6 +42,9 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+
+    CleverTapPlugin.registerForPush();
+
     if (Platform.isAndroid) {
 
       _checkLaunchFromNotification();
@@ -165,7 +168,7 @@ class _MyAppState extends State<MyApp> {
       navigatorKey: navigatorKey,
       title: 'CGV Demo App',
       theme: ThemeData(primarySwatch: Colors.red),
-      home: const Loginpage1(),
+      home: const TestPage(),
     );
   }
 }

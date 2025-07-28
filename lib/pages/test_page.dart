@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'dart:convert';
 
-
-class Loginpage1 extends StatefulWidget {
-  const Loginpage1({super.key});
+class TestPage extends StatefulWidget {
+  const TestPage({super.key});
 
   @override
-  State<Loginpage1> createState() => _Loginpage1State();
+  State<TestPage> createState() => _TestPageState();
 }
 
-class _Loginpage1State extends State<Loginpage1> {
+class _TestPageState extends State<TestPage> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -31,11 +32,12 @@ class _Loginpage1State extends State<Loginpage1> {
   int _currentIndex = 0;
 
   List<Map<String, dynamic>> _eventProperties = [_createProperty()];
-
   List<Map<String, dynamic>> _userProperties = [_createProperty()];
 
   String _currentIdentity = '';
   List<String> _recentActions = [];
+
+  List<dynamic> _displayUnits = [];
 
   @override
   void initState() {
@@ -55,6 +57,50 @@ class _Loginpage1State extends State<Loginpage1> {
           _cleverTapId = 'Error: $error';
         });
       });
+  }
+
+  void fetchAndRenderNativeDisplay() async {
+    try {
+      List<dynamic> displayUnits = await CleverTapPlugin.getAllDisplayUnits() ?? [];
+      for (var unit in displayUnits) {
+        print('🔹 Display Unit Received: $unit');
+
+        final jsonUnit = jsonDecode(jsonEncode(unit));
+        final contentListRaw = jsonUnit['content'];
+
+        if (contentListRaw == null || contentListRaw is! List || contentListRaw.isEmpty) {
+          print("⚠️ contentList không hợp lệ hoặc trống.");
+          continue;
+        }
+
+        final contentList = contentListRaw as List;
+        final firstContent = contentList[0];
+
+        final title = (firstContent['title'] != null && firstContent['title']['text'] != null)
+            ? firstContent['title']['text']
+            : 'No Title';
+
+        final message = (firstContent['message'] != null && firstContent['message']['text'] != null)
+            ? firstContent['message']['text']
+            : 'No Message';
+
+        final unitId = jsonUnit['wzrk_id'] ?? 'Unknown';
+
+        CleverTapPlugin.pushDisplayUnitViewedEvent(unitId);
+
+        setState(() {
+          _displayUnits.add({
+            'unitID': unitId,
+            'title': title,
+            'message': message,
+            'imageUrl': firstContent['media']?['url'] ?? '',
+          });
+        });
+      }
+    } catch (e, st) {
+      print("❌ Lỗi khi lấy display units: $e");
+      print("📌 Stack Trace: $st");
+    }
   }
 
   Future<void> _loadGdprSettings() async {
@@ -349,7 +395,81 @@ class _Loginpage1State extends State<Loginpage1> {
             onPressed: _sendChargedEvent,
           ),
           const SizedBox(height: 24),
+                    ElevatedButton.icon(
+            icon: const Icon(Icons.shopping_cart),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            label: const Text('Call Native Display'),
+            onPressed: _sendNativeDisplayEvent,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.notifications_active),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            label: const Text('Fetch Native Display'),
+            onPressed: fetchAndRenderNativeDisplay,
+          ),
+          const SizedBox(height: 24),
+
           const Text('⚙️ Coming soon: E-commerce Samples, Travel, Banking...'),
+          const SizedBox(height: 24),
+
+          // ✅ Render Native Display - FIXED overflow
+          ..._displayUnits.map((unit) {
+          final title = unit['title'] ?? 'No Title';
+          final message = unit['message'] ?? 'No Message';
+          final imageUrl = unit['imageUrl'] ?? '';
+
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (imageUrl.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                      child: Image.network(
+                        imageUrl,
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        title,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        message,
+                        style: const TextStyle(fontSize: 14),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () {
+                        CleverTapPlugin.pushDisplayUnitClickedEvent(unit['unitID']);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         ],
       ),
     );
@@ -604,6 +724,19 @@ class _Loginpage1State extends State<Loginpage1> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('✅ Đặt hàng thành công!')),
+    );
+  }
+
+    void _sendNativeDisplayEvent() {
+
+    CleverTapPlugin.recordEvent("native display",{});
+
+    setState(() {
+      _recentActions.add('${_formatTime(DateTime.now())}: Native Display Event');
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('✅ Gọi native display thành công!')),
     );
   }
 
